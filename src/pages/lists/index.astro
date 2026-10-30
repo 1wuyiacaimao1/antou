@@ -1,0 +1,57 @@
+---
+import Base from "../../layouts/Base.astro";
+import { lists } from "../../data/lists";
+
+const doneCount = (l: (typeof lists)[number]) => l.items.filter((i) => i.done).length;
+const pct = (l: (typeof lists)[number]) => Math.round((doneCount(l) / l.total) * 100);
+---
+
+<Base title="清单">
+  <div class="sheet-page">
+    <div class="sheet">
+      <a class="back" href="/">← 书桌</a>
+
+      <div class="head">
+        <h1>清单</h1>
+        <span class="count">{lists.length} 个</span>
+      </div>
+      <p class="lede">想做的事分门别类放着，勾掉一项就算完成，不追进度。</p>
+
+      <div class="lists">
+        {
+          lists.map((l) => (
+            <a class="row-link" href={`/lists/${l.id}`}>
+              <span class="top">
+                <span class="name">{l.name}</span>
+                <span class="num">{doneCount(l)} / {l.total}</span>
+              </span>
+              <div class="note">{l.note}</div>
+              <div class="track"><i style={`width:${pct(l)}%`} /></div>
+            </a>
+          ))
+        }
+      </div>
+    </div>
+  </div>
+</Base>
+
+<style is:global>
+  .lists{ margin-top: 34px; }
+
+  .row-link{
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    padding: 22px 0;
+    border-top: 1px solid var(--line);
+  }
+  .row-link:last-child{ border-bottom: 1px solid var(--line); }
+  .row-link .top{ display: flex; align-items: baseline; gap: 14px; }
+  .row-link .name{ font-size: 16.5px; line-height: 1.6; }
+  .row-link .num{ margin-left: auto; font-family: var(--brush); font-size: 14px; color: var(--ink-2); }
+  .row-link .note{ margin-top: 5px; font-size: 12.5px; color: #A8A39A; letter-spacing: .02em; }
+  .row-link:hover .num{ color: var(--stamp); }
+
+  .track{ margin-top: 12px; height: 2px; background: var(--line); position: relative; overflow: hidden; }
+  .track i{ position: absolute; left: 0; top: 0; bottom: 0; background: #8C8272; transition: width .3s cubic-bezier(.22,.61,.36,1); }
+</style>

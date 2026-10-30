@@ -1,0 +1,76 @@
+---
+import Base from "../../layouts/Base.astro";
+import { getCollection, render } from "astro:content";
+import type { CollectionEntry } from "astro:content";
+
+export async function getStaticPaths() {
+  const all = (await getCollection("journal", ({ data }) => !data.draft)).sort(
+    (a, b) => b.data.date.getTime() - a.data.date.getTime()
+  );
+
+  return all.map((entry, i) => ({
+    params: { slug: entry.id },
+    props: {
+      entry,
+      prev: all[i + 1] ?? null,
+      next: all[i - 1] ?? null,
+    },
+  }));
+}
+
+interface Props {
+  entry: CollectionEntry<"journal">;
+  prev: CollectionEntry<"journal"> | null;
+  next: CollectionEntry<"journal"> | null;
+}
+
+const { entry, prev, next } = Astro.props;
+const { Content } = await render(entry);
+
+const pad = (n: number) => String(n).padStart(2, "0");
+const md = (d: Date) => `${d.getMonth() + 1}.${pad(d.getDate())}`;
+const week = ["日", "一", "二", "三", "四", "五", "六"];
+const full = (d: Date) =>
+  `${d.getFullYear()} 年 ${d.getMonth() + 1} 月 ${d.getDate()} 日 · 星期${week[d.getDay()]}`;
+---
+
+<Base title={entry.data.title ?? "无题"}>
+  <div class="sheet-page">
+    <div class="sheet">
+      <a class="back" href="/">← 书桌</a>
+
+      <article class="entry">
+        <span class="d">{full(entry.data.date)}</span>
+        <h1>{entry.data.title ?? "无题"}</h1>
+        {entry.data.tags.length > 0 && <div class="tags">{entry.data.tags.join(" · ")}</div>}
+
+        <div class="body">
+          <Content />
+        </div>
+
+        <nav class="pager">
+          {
+            prev ? (
+              <a href={`/journal/${prev.id}`}>
+                <span class="lab">上一条 · {md(prev.data.date)}</span>
+                {prev.data.title ?? "无题"}
+              </a>
+            ) : (
+              <span />
+            )
+          }
+          {
+            next ? (
+              <a href={`/journal/${next.id}`} style="text-align:right">
+                <span class="lab">下一条 · {md(next.data.date)}</span>
+                {next.data.title ?? "无题"}
+              </a>
+            ) : (
+              <span />
+            )
+          }
+        </nav>
+      </article>
+    </div>
+  </div>
+</Base>

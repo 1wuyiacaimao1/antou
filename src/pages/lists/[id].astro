@@ -1,0 +1,150 @@
+---
+import Base from "../../layouts/Base.astro";
+import { lists } from "../../data/lists";
+import type { ListGroup } from "../../data/lists";
+
+export async function getStaticPaths() {
+  return lists.map((l) => ({ params: { id: l.id }, props: { list: l } }));
+}
+
+interface Props {
+  list: ListGroup;
+}
+
+const { list } = Astro.props;
+const done = list.items.filter((i) => i.done).length;
+const pct = Math.round((done / list.total) * 100);
+---
+
+<Base title={list.name}>
+  <div class="sheet-page">
+    <div class="sheet">
+      <a class="back" href="/">← 书桌</a>
+
+      <article class="detail" data-list={list.id} data-total={list.total}>
+        <h1>{list.name}</h1>
+
+        <div class="meta">
+          <span id="count">{done} / {list.total}</span>
+          <span class="bar"><i id="bar" style={`width:${pct}%`} /></span>
+        </div>
+
+        <div class="items" id="items">
+          {
+            list.items.map((it) => (
+              <div class={`it${it.done ? " on" : ""}`} data-k={it.k}>
+                <span class="box">
+                  <svg viewBox="0 0 16 16">
+                    <path d="M3 8.5 L6.4 12 L13 4.6" fill="none" stroke="#FFFDF8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </span>
+                <span class="txt">{it.text}</span>
+                <span class="yr">{it.year ?? ""}</span>
+              </div>
+            ))
+          }
+        </div>
+
+        <p class="foot">勾选状态存在这台电脑的浏览器里，换设备或清缓存会回到初始状态。</p>
+      </article>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const root = document.querySelector<HTMLElement>(".detail");
+      if (!root) return;
+      const key = "list:" + root.dataset.list;
+      const total = Number(root.dataset.total || 0);
+      const items = Array.from(root.querySelectorAll<HTMLElement>(".it"));
+      const count = document.getElementById("count")!;
+      const bar = document.getElementById("bar")!;
+
+      let saved: string[] = [];
+      try {
+        saved = JSON.parse(localStorage.getItem(key) || "[]");
+      } catch {
+        saved = [];
+      }
+      if (saved.length) {
+        items.forEach((el) => {
+          if (saved.includes(el.dataset.k!)) el.classList.add("on");
+        });
+      }
+
+      function refresh() {
+        const on = items.filter((el) => el.classList.contains("on")).length;
+        count.textContent = on + " / " + total;
+        bar.style.width = (on / total) * 100 + "%";
+        const now = items.filter((el) => el.classList.contains("on")).map((el) => el.dataset.k!);
+        try {
+          localStorage.setItem(key, JSON.stringify(now));
+        } catch {}
+      }
+
+      items.forEach((el) => el.addEventListener("click", () => {
+        el.classList.toggle("on");
+        refresh();
+      }));
+
+      refresh();
+    })();
+  </script>
+</Base>
+
+<style is:global>
+  .detail h1{
+    font-family: var(--brush);
+    font-size: 40px;
+    font-weight: 400;
+    line-height: 1.35;
+    margin-top: 40px;
+  }
+
+  .meta{
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 16px;
+    font-size: 12px;
+    color: var(--ink-2);
+    letter-spacing: .06em;
+  }
+  .meta .bar{ flex: 1; height: 2px; background: var(--line); position: relative; overflow: hidden; }
+  .meta .bar i{ position: absolute; left: 0; top: 0; bottom: 0; background: #8C8272; transition: width .3s cubic-bezier(.22,.61,.36,1); }
+
+  .items{ margin-top: 30px; max-width: 620px; }
+
+  .it{
+    display: grid;
+    grid-template-columns: 22px 1fr auto;
+    gap: 14px;
+    align-items: baseline;
+    padding: 13px 0;
+    border-bottom: 1px solid var(--line);
+    cursor: pointer;
+    user-select: none;
+  }
+  .box{
+    width: 15px; height: 15px;
+    border: 1px solid #BFB7A6;
+    border-radius: 2px;
+    position: relative; top: 2px;
+    transition: background .18s, border-color .18s;
+  }
+  .box svg{
+    position: absolute; left: 1px; top: 0;
+    width: 13px; height: 13px;
+    opacity: 0; transform: scale(.6);
+    transition: opacity .18s ease, transform .22s cubic-bezier(.22,.61,.36,1);
+  }
+  .it.on .box{ background: var(--stamp); border-color: var(--stamp); }
+  .it.on .box svg{ opacity: 1; transform: scale(1); }
+  .it .txt{ font-size: 15px; line-height: 1.7; transition: color .2s; }
+  .it.on .txt{ color: #B3AB9C; }
+  .it .yr{ font-family: var(--brush); font-size: 12.5px; color: #B3AB9C; }
+  .it:hover .txt{ color: #000; }
+  .it.on:hover .txt{ color: #8E877C; }
+
+  .foot{ margin-top: 26px; font-size: 11.5px; line-height: 1.9; color: #B3AB9C; max-width: 520px; }
+</style>

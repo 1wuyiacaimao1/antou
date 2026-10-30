@@ -1,0 +1,50 @@
+---
+import Base from "../../layouts/Base.astro";
+import { getCollection } from "astro:content";
+
+const pad = (n: number) => String(n).padStart(2, "0");
+const md = (d: Date) => `${d.getMonth() + 1}.${pad(d.getDate())}`;
+
+const entries = (await getCollection("journal", ({ data }) => !data.draft)).sort(
+  (a, b) => b.data.date.getTime() - a.data.date.getTime()
+);
+
+const excerpt = (body: string | undefined) =>
+  (body ?? "")
+    .replace(/^---[\s\S]*?---/, "")
+    .replace(/[#>*_`\-\[\]()]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 64);
+---
+
+<Base title="随记">
+  <div class="sheet-page">
+    <div class="sheet">
+      <a class="back" href="/">← 书桌</a>
+
+      <div class="head">
+        <h1>随记</h1>
+        <span class="count">{entries.length} 条</span>
+      </div>
+      <p class="lede">想到什么就记一笔，不讲究长短。</p>
+
+      <div class="list">
+        {
+          entries.map((e) => (
+            <a class="item" href={`/journal/${e.id}`}>
+              <span class="d">{md(e.data.date)}</span>
+              <div>
+                <h2>{e.data.title ?? "无题"}</h2>
+                <p>{excerpt(e.body)}</p>
+                {e.data.tags.length > 0 && <div class="tags">{e.data.tags.join(" · ")}</div>}
+              </div>
+            </a>
+          ))
+        }
+      </div>
+
+      {entries.length === 0 && <p class="empty">还没有记录。<br />去桌上那只笔那里写第一条。</p>}
+    </div>
+  </div>
+</Base>

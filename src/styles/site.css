@@ -1,0 +1,251 @@
+/* ============================================================
+   个人生活记录站 · 全站样式
+   一个文件，按区块分。改东西先看 design.md。
+   ============================================================ */
+
+@font-face{
+  font-family: "brush";
+  src: url("/fonts/LongCang.woff2") format("woff2");
+  font-display: swap;
+}
+
+:root{
+  --floor: #F7F4EE;
+  --paper: #FDF9F1;
+  --paper-2: #FBF5E8;
+
+  --wood: #3A2C21;
+  --wood-hi: #4A3A2C;
+  --wood-front: #433327;
+  --wood-in: #291F17;
+  --wood-edge: #1C130C;
+  --wood-text: #D6C6B0;
+  --wood-text-2: #9C8A72;
+
+  --ink: #232019;
+  --ink-2: #6B6862;
+  --line: #E6DFD2;
+  --stamp: #C25A40;
+
+  --leaf: #C3CFB9;
+  --leaf-2: #B2C0A6;
+  --pot: #CBB49C;
+  --glass-fill: #F1EADF;
+  --water: #DCE6E1;
+  --pen: #E2D8C8;
+
+  --brush: "brush", "Kaiti SC", "KaiTi", serif;
+  --sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+  --mono: ui-monospace, "JetBrains Mono", Consolas, "Courier New", monospace;
+}
+
+*{ box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body{ min-height: 100%; }
+
+body{
+  background: var(--floor);
+  color: var(--ink);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+a{ color: inherit; }
+
+/* ---------------- 子页面：纸铺在桌上 ---------------- */
+
+.sheet-page{
+  background-color: var(--wood);
+  background-image:
+    url("/assets/wood-grain.svg"),
+    radial-gradient(140% 100% at 22% -12%, rgba(255,236,208,.10), rgba(255,236,208,0) 60%),
+    radial-gradient(100% 80% at 92% 112%, rgba(0,0,0,.30), rgba(0,0,0,0) 68%);
+  background-size: 100% 100%, 100% 100%, 100% 100%;
+  background-repeat: no-repeat;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  padding: 48px 32px;
+}
+
+.sheet{
+  width: 820px;
+  max-width: 100%;
+  background: var(--paper);
+  border-radius: 14px;
+  padding: 52px 72px 60px;
+  box-shadow:
+    inset 0 -5px 0 rgba(0,0,0,.10),
+    0 30px 60px -22px rgba(0,0,0,.65);
+}
+
+@media (min-width: 1400px){ .sheet{ width: 880px; padding: 52px 110px 60px; } }
+@media (min-width: 1700px){ .sheet{ width: 960px; padding: 52px 150px 60px; } }
+
+.back{
+  display: inline-block;
+  font-size: 12px;
+  letter-spacing: .1em;
+  color: var(--ink-2);
+  text-decoration: none;
+  padding-bottom: 2px;
+  border-bottom: 1px solid transparent;
+  transition: color .18s, border-color .18s;
+}
+.back:hover{ color: var(--stamp); border-color: var(--stamp); }
+
+/* ---------------- 板块标题 ---------------- */
+
+.head{
+  margin: 44px 0 6px;
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+}
+.head h1{
+  font-family: var(--brush);
+  font-size: 46px;
+  font-weight: 400;
+  letter-spacing: .02em;
+  line-height: 1;
+}
+.head .count{
+  font-size: 11px;
+  color: #A8A39A;
+  letter-spacing: .14em;
+}
+.lede{
+  margin-top: 12px;
+  font-size: 13px;
+  line-height: 1.9;
+  color: var(--ink-2);
+  max-width: 520px;
+}
+
+/* ---------------- 随记列表 ---------------- */
+
+.list{ margin-top: 24px; }
+
+.item{
+  display: grid;
+  grid-template-columns: 58px 1fr;
+  gap: 22px;
+  padding: 22px 0;
+  text-decoration: none;
+  color: inherit;
+  border-top: 1px solid var(--line);
+}
+.item:last-child{ border-bottom: 1px solid var(--line); }
+
+.item .d{
+  font-family: var(--brush);
+  font-size: 15px;
+  color: var(--ink-2);
+  line-height: 1.6;
+  transition: color .18s;
+}
+.item:hover .d{ color: var(--stamp); }
+
+.item h2{
+  font-size: 17px;
+  font-weight: 500;
+  line-height: 1.6;
+  letter-spacing: .01em;
+}
+.item p{
+  font-size: 13.5px;
+  line-height: 1.8;
+  color: var(--ink-2);
+  margin-top: 6px;
+}
+.item .tags{
+  margin-top: 8px;
+  font-size: 11px;
+  color: #A8A39A;
+  letter-spacing: .08em;
+}
+
+/* ---------------- 随记详情 ---------------- */
+
+.entry{ max-width: 660px; }
+
+.entry .d{
+  display: block;
+  font-family: var(--brush);
+  font-size: 16px;
+  color: var(--ink-2);
+  letter-spacing: .04em;
+  margin: 40px 0 12px;
+}
+.entry h1{
+  font-family: var(--brush);
+  font-size: 40px;
+  font-weight: 400;
+  line-height: 1.35;
+  letter-spacing: .02em;
+}
+.entry .tags{
+  margin-top: 14px;
+  font-size: 11px;
+  color: #A8A39A;
+  letter-spacing: .1em;
+}
+
+.body{
+  margin-top: 34px;
+  font-size: 17px;
+  line-height: 1.95;
+  color: #2E2B26;
+}
+.body p + p{ margin-top: 1.2em; }
+.body img{
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 32px 0;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+}
+.body h2, .body h3{
+  font-family: var(--sans);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  margin: 32px 0 12px;
+}
+.body blockquote{
+  margin: 28px 0;
+  padding-left: 18px;
+  border-left: 2px solid var(--line);
+  color: var(--ink-2);
+}
+
+.pager{
+  margin-top: 64px;
+  padding-top: 22px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+.pager a{ text-decoration: none; max-width: 46%; transition: color .18s; }
+.pager a:hover{ color: var(--stamp); }
+.pager .lab{
+  display: block;
+  font-size: 10.5px;
+  letter-spacing: .16em;
+  color: #A8A39A;
+  margin-bottom: 6px;
+}
+
+/* ---------------- 空状态 ---------------- */
+
+.empty{
+  margin-top: 60px;
+  font-family: var(--brush);
+  font-size: 20px;
+  color: #C0B7A6;
+  line-height: 2;
+}

@@ -1,0 +1,260 @@
+---
+import Base from "../layouts/Base.astro";
+import { moments } from "../data/moments";
+---
+
+<Base title="瞬间">
+  <div class="sheet-page">
+    <div class="sheet sheet-m">
+      <a class="back" href="/">← 书桌</a>
+
+      <div class="head">
+        <h1>瞬间</h1>
+        <span class="count">{moments.length} 张</span>
+      </div>
+      <p class="lede">照片按时间叠在桌上。点最上面那张翻开，左右拖动翻下一张。</p>
+
+      <div class="stage">
+        <button class="close" id="close">收 起</button>
+        <div class="deck pile" id="deck">
+          {
+            moments.map((m, i) => (
+              <article
+                class="card"
+                data-date={m.d}
+                data-title={m.title}
+                data-text={m.text}
+                data-tags={m.tags}
+                data-i={i}
+              >
+                <svg width={m.w} height={m.h} viewBox={`0 0 ${m.w} ${m.h}`} preserveAspectRatio="none">
+                  <rect width={m.w} height={m.h} fill={m.colors[0]} />
+                  <rect y={m.h * 0.58} width={m.w} height={m.h * 0.42} fill={m.colors[1]} />
+                  <rect y={m.h * 0.58} width={m.w} height="2" fill="rgba(0,0,0,.05)" />
+                </svg>
+              </article>
+            ))
+          }
+        </div>
+      </div>
+
+      <div class="info">
+        <span class="d" id="i-date">{moments[0].d}</span>
+        <h2 id="i-title">{moments[0].title}</h2>
+        <p id="i-text">{moments[0].text}</p>
+        <div class="tags" id="i-tags">{moments[0].tags}</div>
+        <div class="dotbar" id="dots"></div>
+      </div>
+
+      <div class="hint" id="hint">点 照 片 翻 开</div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const deck = document.getElementById("deck")!;
+      const cards = Array.from(deck.querySelectorAll<HTMLElement>(".card"));
+      const closeBtn = document.getElementById("close")!;
+      const hint = document.getElementById("hint")!;
+      const dots = document.getElementById("dots")!;
+
+      const N = cards.length;
+      let mode: "pile" | "viewer" = "pile";
+      let active = 0;
+
+      cards.forEach((_, i) => {
+        const d = document.createElement("i");
+        if (i === 0) d.className = "on";
+        dots.appendChild(d);
+      });
+
+      function drawInfo(i: number) {
+        const c = cards[i];
+        document.getElementById("i-date")!.textContent = c.dataset.date ?? "";
+        document.getElementById("i-title")!.textContent = c.dataset.title ?? "";
+        document.getElementById("i-text")!.textContent = c.dataset.text ?? "";
+        document.getElementById("i-tags")!.textContent = c.dataset.tags ?? "";
+        Array.from(dots.children).forEach((d, k) => {
+          d.className = k === i ? "on" : "";
+        });
+      }
+
+      const gap = () => Math.max(300, deck.clientWidth * 0.56);
+
+      function layoutPile() {
+        cards.forEach((c, i) => {
+          c.style.transition = "transform .45s cubic-bezier(.22,.61,.36,1), opacity .45s ease";
+          c.style.transform =
+            "translate(-50%,-50%) translateY(" + i * 11 + "px)" +
+            " scale(" + (1 - i * 0.028) + ")" +
+            " rotate(" + (i % 2 ? 1.1 : -1.1) + "deg)";
+          c.style.opacity = i === 0 ? "1" : String(Math.max(0.25, 1 - i * 0.16));
+          c.style.zIndex = String(20 - i);
+        });
+      }
+
+      function layoutViewer(progress: number, animate: boolean) {
+        const g = gap();
+        cards.forEach((c, i) => {
+          const d = i - (active + progress);
+          const abs = Math.abs(d);
+          c.style.transition = animate
+            ? "transform .42s cubic-bezier(.22,.61,.36,1), opacity .42s ease"
+            : "none";
+          c.style.transform =
+            "translate(-50%,-50%) translateX(" + d * g + "px)" +
+            " scale(" + (1 - Math.min(abs, 1.6) * 0.12) + ") rotate(0deg)";
+          c.style.opacity = abs < 0.5 ? "1" : String(Math.max(0, 1 - (abs - 0.5) * 0.85));
+          c.style.zIndex = String(20 - Math.round(abs));
+        });
+      }
+
+      function enterViewer(i: number) {
+        mode = "viewer";
+        active = i;
+        deck.classList.remove("pile");
+        deck.classList.add("viewer");
+        closeBtn.classList.add("on");
+        hint.classList.add("hide");
+        drawInfo(i);
+        layoutViewer(0, true);
+      }
+
+      function exitViewer() {
+        mode = "pile";
+        deck.classList.remove("viewer");
+        deck.classList.add("pile");
+        closeBtn.classList.remove("on");
+        hint.classList.remove("hide");
+        layoutPile();
+      }
+
+      let startX = 0, startActive = 0, dragging = false, moved = 0;
+
+      deck.addEventListener("pointerdown", (e) => {
+        startX = e.clientX;
+        startActive = active;
+        dragging = true;
+        moved = 0;
+        if (mode === "viewer") deck.classList.add("dragging");
+        deck.setPointerCapture(e.pointerId);
+      });
+
+      deck.addEventListener("pointermove", (e) => {
+        if (!dragging || mode !== "viewer") return;
+        const dx = e.clientX - startX;
+        moved = Math.max(moved, Math.abs(dx));
+        const g = gap();
+        let p = -dx / g;
+        if (startActive + p < 0 || startActive + p > N - 1) p = -dx / (g * 1.9);
+        layoutViewer(p, false);
+      });
+
+      deck.addEventListener("pointerup", (e) => {
+        if (!dragging) return;
+        dragging = false;
+        deck.classList.remove("dragging");
+
+        const dx = e.clientX - startX;
+        const g = gap();
+
+        if (mode === "pile") {
+          if (moved < 8) enterViewer(0);
+          return;
+        }
+
+        let next = active;
+        if (dx < -g * 0.22 && active < N - 1) next = active + 1;
+        else if (dx > g * 0.22 && active > 0) next = active - 1;
+
+        if (next !== active) {
+          active = next;
+          drawInfo(active);
+        }
+        layoutViewer(0, true);
+      });
+
+      deck.addEventListener("pointercancel", () => {
+        dragging = false;
+        deck.classList.remove("dragging");
+        if (mode === "viewer") layoutViewer(0, true);
+      });
+
+      closeBtn.addEventListener("click", exitViewer);
+
+      window.addEventListener("keydown", (e) => {
+        if (mode !== "viewer") return;
+        if (e.key === "ArrowRight" && active < N - 1) { active++; drawInfo(active); layoutViewer(0, true); }
+        if (e.key === "ArrowLeft" && active > 0) { active--; drawInfo(active); layoutViewer(0, true); }
+        if (e.key === "Escape") exitViewer();
+      });
+
+      window.addEventListener("resize", () => {
+        if (mode === "pile") layoutPile();
+        else layoutViewer(0, true);
+      });
+
+      layoutPile();
+    })();
+  </script>
+</Base>
+
+<style is:global>
+  .sheet-m{ display: flex; flex-direction: column; }
+
+  .stage{
+    position: relative;
+    margin: 44px 0 0;
+    flex: 1;
+    min-height: 420px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .deck{
+    position: relative;
+    width: 100%;
+    height: 400px;
+    touch-action: none;
+  }
+  .deck.pile{ cursor: pointer; }
+  .deck.viewer{ cursor: grab; }
+  .deck.viewer.dragging{ cursor: grabbing; }
+
+  .card{
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    height: 352px;
+    background: #FFFDF8;
+    padding: 9px;
+    border-radius: 4px;
+    box-shadow: 0 14px 30px -14px rgba(60,40,20,.50), 0 2px 6px rgba(60,40,20,.16);
+    will-change: transform, opacity;
+    transform-origin: 50% 50%;
+  }
+  .card svg{ display: block; height: 100%; width: auto; border-radius: 2px; }
+
+  .info{ margin-top: 30px; max-width: 600px; min-height: 96px; }
+  .info .d{ display: block; font-family: var(--brush); font-size: 15px; color: var(--ink-2); letter-spacing: .05em; }
+  .info h2{ font-family: var(--brush); font-size: 30px; font-weight: 400; line-height: 1.35; margin-top: 8px; }
+  .info p{ margin-top: 10px; font-size: 14.5px; line-height: 1.9; color: #3A362F; }
+  .info .tags{ margin-top: 10px; font-size: 11px; color: #A8A39A; letter-spacing: .1em; }
+
+  .hint{ margin-top: 8px; font-size: 11px; letter-spacing: .12em; color: #B3AB9C; transition: opacity .3s ease; }
+  .hint.hide{ opacity: 0; }
+
+  .close{
+    position: absolute; right: 0; top: -4px;
+    font-size: 11px; letter-spacing: .14em; color: #A8A39A;
+    background: none; border: none; cursor: pointer; font-family: inherit;
+    opacity: 0; pointer-events: none;
+    transition: opacity .3s ease, color .18s;
+  }
+  .close.on{ opacity: 1; pointer-events: auto; }
+  .close:hover{ color: var(--stamp); }
+
+  .dotbar{ display: flex; gap: 6px; margin-top: 16px; }
+  .dotbar i{ width: 5px; height: 5px; border-radius: 50%; background: #DED6C6; transition: background .25s; }
+  .dotbar i.on{ background: var(--stamp); }
+</style>
