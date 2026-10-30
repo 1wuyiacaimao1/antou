@@ -8,11 +8,32 @@ $logDir = Join-Path $root "_log"
 New-Item -ItemType Directory -Force -Path $logDir | Out-Null
 $logPath = Join-Path $logDir "upload.log"
 
+function Find-Git {
+    $cmd = Get-Command git -ErrorAction SilentlyContinue
+    if ($cmd) { return $cmd.Source }
+    $cands = @(
+        "D:\Git\cmd\git.exe",
+        "C:\Program Files\Git\cmd\git.exe",
+        "C:\Program Files (x86)\Git\cmd\git.exe",
+        "$env:LOCALAPPDATA\Programs\Git\cmd\git.exe"
+    )
+    foreach ($p in $cands) { if (Test-Path $p) { return $p } }
+    return $null
+}
+
 try { Start-Transcript -Path $logPath -Force | Out-Null } catch { }
 
 try {
     $now = Get-Date
     $stamp = $now.ToString("yyyy-MM-dd HH:mm")
+
+    $git = Find-Git
+    if (-not $git) {
+        Write-Host ""
+        Write-Host "  这台电脑上找不到 git。" -ForegroundColor Red
+        Write-Host "  装一个 Git for Windows，或者告诉我 git 装在哪了。" -ForegroundColor DarkGray
+        exit 1
+    }
 
     Write-Host ""
     Write-Host "  整理文件里的 frontmatter……" -ForegroundColor DarkGray
@@ -43,8 +64,8 @@ try {
     Write-Host "  构建通过。" -ForegroundColor Green
     Write-Host ""
 
-    & git add -A | Out-Null
-    $changed = & git diff --cached --name-only
+    & $git add -A | Out-Null
+    $changed = & $git diff --cached --name-only
 
     if (-not $changed) {
         Write-Host "  没有改动，不用上传。" -ForegroundColor DarkGray
@@ -52,7 +73,7 @@ try {
     }
 
     $msg = "记录 $stamp"
-    & git -c user.name="wuyi" -c user.email="wuyi@example.com" commit -m $msg | Out-Null
+    & $git -c user.name="wuyi" -c user.email="wuyi@example.com" commit -m $msg | Out-Null
 
     if ($LASTEXITCODE -ne 0) {
         Write-Host "  提交失败。" -ForegroundColor Red
@@ -60,7 +81,7 @@ try {
     }
 
     Write-Host "  推送中……" -ForegroundColor DarkGray
-    & git push
+    & $git push
     if ($LASTEXITCODE -ne 0) {
         Write-Host ""
         Write-Host "  推送失败，可能是没登录 GitHub。" -ForegroundColor Red
