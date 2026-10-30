@@ -14,12 +14,13 @@ interface Props {
 const { list } = Astro.props;
 const done = list.items.filter((i) => i.done).length;
 const pct = Math.round((done / list.total) * 100);
+const base = import.meta.env.BASE_URL.replace(/\/$/, "") + "/";
 ---
 
 <Base title={list.name}>
   <div class="sheet-page">
     <div class="sheet">
-      <a class="back" href="/">← 书桌</a>
+      <a class="back" href={base}>← 书桌</a>
 
       <article class="detail" data-list={list.id} data-total={list.total}>
         <h1>{list.name}</h1>

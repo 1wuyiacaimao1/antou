@@ -3,12 +3,6 @@
    一个文件，按区块分。改东西先看 design.md。
    ============================================================ */
 
-@font-face{
-  font-family: "brush";
-  src: url("/fonts/LongCang.woff2") format("woff2");
-  font-display: swap;
-}
-
 :root{
   --floor: #F7F4EE;
   --paper: #FDF9F1;
@@ -57,7 +51,7 @@ a{ color: inherit; }
 .sheet-page{
   background-color: var(--wood);
   background-image:
-    url("/assets/wood-grain.svg"),
+    var(--grain),
     radial-gradient(140% 100% at 22% -12%, rgba(255,236,208,.10), rgba(255,236,208,0) 60%),
     radial-gradient(100% 80% at 92% 112%, rgba(0,0,0,.30), rgba(0,0,0,0) 68%);
   background-size: 100% 100%, 100% 100%, 100% 100%;

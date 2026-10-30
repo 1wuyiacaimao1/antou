@@ -3,12 +3,13 @@ import Base from "../layouts/Base.astro";
 import { groups } from "../data/bookmarks";
 
 const total = groups.reduce((n, g) => n + g.links.length, 0);
+const base = import.meta.env.BASE_URL.replace(/\/$/, "") + "/";
 ---
 
 <Base title="收藏">
   <div class="sheet-page">
     <div class="sheet">
-      <a class="back" href="/">← 书桌</a>
+      <a class="back" href={base}>← 书桌</a>
 
       <div class="head">
         <h1>收藏</h1>

@@ -13,6 +13,7 @@ const md = (d: Date) => `${d.getMonth() + 1}.${pad(d.getDate())}`;
 const full = (d: Date) => `${d.getFullYear()} · ${pad(d.getMonth() + 1)} · ${pad(d.getDate())}`;
 const today = new Date();
 const weekday = ["日", "一", "二", "三", "四", "五", "六"][today.getDay()];
+const base = import.meta.env.BASE_URL.replace(/\/$/, "") + "/";
 ---
 
 <Base title={site.brand}>
@@ -82,20 +83,20 @@ const weekday = ["日", "一", "二", "三", "四", "五", "六"][today.getDay()
           <div class="cap">桌 上</div>
           {
             recent.map((e) => (
-              <a class="row" href={`/journal/${e.id}`}>
+              <a class="row" href={`${base}journal/${e.id}`}>
                 <span class="d">{md(e.data.date)}</span>
                 <span class="t">{e.data.title ?? "无题"}</span>
               </a>
             ))
           }
-          {recent.length === 0 && <a class="row" href="/journal"><span class="d">—</span><span class="t">还没有记录</span></a>}
+          {recent.length === 0 && <a class="row" href={`${base}journal`}><span class="d">—</span><span class="t">还没有记录</span></a>}
         </div>
       </div>
 
       <button class="shuffle">翻旧账</button>
     </div>
 
-    <script type="application/json" id="all-entries" set:html={JSON.stringify(all.map((e) => `/journal/${e.id}`))} />
+    <script type="application/json" id="all-entries" set:html={JSON.stringify(all.map((e) => `${base}journal/${e.id}`))} />
 
     <div class="scene">
       <!-- 左下角地板：两本书、便签、平躺的小玩偶 -->
@@ -187,11 +188,11 @@ const weekday = ["日", "一", "二", "三", "四", "五", "六"][today.getDay()
       <div class="drawer">
         <div class="tray" id="tray">
           <div class="tray-inner">
-            <a class="cell" href="/journal"><span class="name">随记</span><span class="count">{all.length} 条</span><span class="stack"><i></i><i></i></span></a>
-            <a class="cell" href="/moments"><span class="name">瞬间</span><span class="count">42 张</span><span class="stack"><i></i><i></i></span></a>
-            <a class="cell" href="/lists"><span class="name">清单</span><span class="count">4 个</span><span class="stack"><i></i><i></i></span></a>
-            <a class="cell" href="/notes"><span class="name">笔记</span><span class="count">31 篇</span><span class="stack"><i></i><i></i></span></a>
-            <a class="cell" href="/bookmarks"><span class="name">收藏</span><span class="count">先空着</span><span class="stack"><i></i><i></i></span></a>
+            <a class="cell" href={`${base}journal`}><span class="name">随记</span><span class="count">{all.length} 条</span><span class="stack"><i></i><i></i></span></a>
+            <a class="cell" href={`${base}moments`}><span class="name">瞬间</span><span class="count">42 张</span><span class="stack"><i></i><i></i></span></a>
+            <a class="cell" href={`${base}lists`}><span class="name">清单</span><span class="count">4 个</span><span class="stack"><i></i><i></i></span></a>
+            <a class="cell" href={`${base}notes`}><span class="name">笔记</span><span class="count">31 篇</span><span class="stack"><i></i><i></i></span></a>
+            <a class="cell" href={`${base}bookmarks`}><span class="name">收藏</span><span class="count">先空着</span><span class="stack"><i></i><i></i></span></a>
           </div>
         </div>
         <div class="bar" id="bar">
@@ -322,7 +323,7 @@ const weekday = ["日", "一", "二", "三", "四", "五", "六"][today.getDay()
     padding: 40px 46px 0;
     background-color: var(--wood);
     background-image:
-      url("/assets/wood-grain.svg"),
+      var(--grain),
       radial-gradient(140% 100% at 22% -12%, rgba(255,236,208,.10), rgba(255,236,208,0) 60%),
       radial-gradient(100% 80% at 92% 112%, rgba(0,0,0,.30), rgba(0,0,0,0) 68%);
     background-size: 100% 100%, 100% 100%, 100% 100%;
@@ -439,7 +440,7 @@ const weekday = ["日", "一", "二", "三", "四", "五", "六"][today.getDay()
     height: 84px;
     border-radius: 50%;
     background: var(--wood-hi);
-    background-image: url("/assets/wood-grain.svg");
+    background-image: var(--grain);
     background-size: 420px 210px;
     border: 1px solid rgba(0,0,0,.45);
     box-shadow: 0 4px 10px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,235,205,.22);
@@ -471,7 +472,7 @@ const weekday = ["日", "一", "二", "三", "四", "五", "六"][today.getDay()
     height: 0;
     overflow: hidden;
     background: var(--wood-in);
-    background-image: url("/assets/wood-grain.svg");
+    background-image: var(--grain);
     background-size: 900px 450px;
     border: 1px solid rgba(0,0,0,.5);
     border-bottom: none;
@@ -503,7 +504,7 @@ const weekday = ["日", "一", "二", "三", "四", "五", "六"][today.getDay()
   .bar{
     height: 50px;
     background: var(--wood-front);
-    background-image: url("/assets/wood-grain.svg");
+    background-image: var(--grain);
     background-size: 660px 330px;
     border: 1px solid rgba(0,0,0,.5);
     border-radius: 0 0 8px 8px;

@@ -7,6 +7,7 @@ interface Props {
 }
 
 const { title, description = "随手记下的日子" } = Astro.props;
+const base = import.meta.env.BASE_URL.replace(/\/$/, "") + "/";
 ---
 
 <!doctype html>
@@ -17,7 +18,8 @@ const { title, description = "随手记下的日子" } = Astro.props;
     <meta name="robots" content="noindex" />
     <title>{title}</title>
     <meta name="description" content={description} />
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <style is:inline set:html={`:root{--grain:url("${base}assets/wood-grain.svg")}@font-face{font-family:"brush";src:url("${base}fonts/LongCang.woff2") format("woff2");font-display:swap}`} />
+    <link rel="icon" href={`${base}favicon.svg`} type="image/svg+xml" />
   </head>
   <body>
     <slot />

@@ -1,5 +1,5 @@
 export default {
-  brand: "日常",
+  brand: "案头",
   status: "十月，天凉了",
   count: "137",
 };

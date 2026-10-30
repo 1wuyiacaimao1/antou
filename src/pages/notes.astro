@@ -65,12 +65,13 @@ for right in range(n):
 ];
 
 const offsets = [3, 6, 9, 13, 17, 22];
+const base = import.meta.env.BASE_URL.replace(/\/$/, "") + "/";
 ---
 
 <Base title="笔记">
   <div class="panel-book">
     <div class="topbar">
-      <a class="back-wood" href="/">← 书桌</a>
+      <a class="back-wood" href={base}>← 书桌</a>
     </div>
 
     <div class="book-wrap">
@@ -208,7 +209,7 @@ const offsets = [3, 6, 9, 13, 17, 22];
   .panel-book{
     background-color: var(--wood);
     background-image:
-      url("/assets/wood-grain.svg"),
+      var(--grain),
       radial-gradient(140% 100% at 22% -12%, rgba(255,236,208,.10), rgba(255,236,208,0) 60%),
       radial-gradient(100% 80% at 92% 112%, rgba(0,0,0,.30), rgba(0,0,0,0) 68%);
     background-size: 100% 100%, 100% 100%, 100% 100%;

@@ -32,12 +32,13 @@ const md = (d: Date) => `${d.getMonth() + 1}.${pad(d.getDate())}`;
 const week = ["日", "一", "二", "三", "四", "五", "六"];
 const full = (d: Date) =>
   `${d.getFullYear()} 年 ${d.getMonth() + 1} 月 ${d.getDate()} 日 · 星期${week[d.getDay()]}`;
+const base = import.meta.env.BASE_URL.replace(/\/$/, "") + "/";
 ---
 
 <Base title={entry.data.title ?? "无题"}>
   <div class="sheet-page">
     <div class="sheet">
-      <a class="back" href="/">← 书桌</a>
+      <a class="back" href={base}>← 书桌</a>
 
       <article class="entry">
         <span class="d">{full(entry.data.date)}</span>
@@ -51,7 +52,7 @@ const full = (d: Date) =>
         <nav class="pager">
           {
             prev ? (
-              <a href={`/journal/${prev.id}`}>
+              <a href={`${base}journal/${prev.id}`}>
                 <span class="lab">上一条 · {md(prev.data.date)}</span>
                 {prev.data.title ?? "无题"}
               </a>
@@ -61,7 +62,7 @@ const full = (d: Date) =>
           }
           {
             next ? (
-              <a href={`/journal/${next.id}`} style="text-align:right">
+              <a href={`${base}journal/${next.id}`} style="text-align:right">
                 <span class="lab">下一条 · {md(next.data.date)}</span>
                 {next.data.title ?? "无题"}
               </a>

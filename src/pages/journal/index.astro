@@ -16,12 +16,13 @@ const excerpt = (body: string | undefined) =>
     .replace(/\s+/g, " ")
     .trim()
     .slice(0, 64);
+const base = import.meta.env.BASE_URL.replace(/\/$/, "") + "/";
 ---
 
 <Base title="随记">
   <div class="sheet-page">
     <div class="sheet">
-      <a class="back" href="/">← 书桌</a>
+      <a class="back" href={base}>← 书桌</a>
 
       <div class="head">
         <h1>随记</h1>
@@ -32,7 +33,7 @@ const excerpt = (body: string | undefined) =>
       <div class="list">
         {
           entries.map((e) => (
-            <a class="item" href={`/journal/${e.id}`}>
+            <a class="item" href={`${base}journal/${e.id}`}>
               <span class="d">{md(e.data.date)}</span>
               <div>
                 <h2>{e.data.title ?? "无题"}</h2>
