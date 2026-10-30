@@ -36,9 +36,9 @@ function Show-Chooser {
 
     $script:choice = $null
     $items = @(
-        @{ key = "journal"; label = "随  记"; hint = "一段话" },
-        @{ key = "moments"; label = "瞬  间"; hint = "还没接" },
-        @{ key = "notes";   label = "笔  记"; hint = "还没接" }
+        @{ key = "journal"; label = "随  记"; hint = "可以写" },
+        @{ key = "moments"; label = "瞬  间 · 用 1-整理图片"; hint = "还没接" },
+        @{ key = "notes";   label = "笔  记 · 还没接"; hint = "还没接" }
     )
 
     $top = 54

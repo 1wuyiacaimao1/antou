@@ -16,4 +16,30 @@ const journal = defineCollection({
   }),
 });
 
-export const collections = { journal };
+const moments = defineCollection({
+  loader: glob({ pattern: "**/*.md", base: "./src/content/moments" }),
+  schema: z.object({
+    date: z.coerce.date(),
+    title: z
+      .string()
+      .nullish()
+      .transform((v) => (v ?? "").trim()),
+    text: z
+      .string()
+      .nullish()
+      .transform((v) => (v ?? "").trim()),
+    tags: z.array(z.string()).default([]),
+    photos: z
+      .array(
+        z.object({
+          src: z.string(),
+          w: z.number(),
+          h: z.number(),
+        })
+      )
+      .default([]),
+    draft: z.boolean().default(false),
+  }),
+});
+
+export const collections = { journal, moments };

@@ -1,7 +1,30 @@
 ---
 import Base from "../layouts/Base.astro";
-import { moments } from "../data/moments";
+import { getCollection } from "astro:content";
+
 const base = import.meta.env.BASE_URL.replace(/\/$/, "") + "/";
+const week = ["日", "一", "二", "三", "四", "五", "六"];
+const pad = (n: number) => String(n).padStart(2, "0");
+const label = (d: Date) =>
+  `${pad(d.getMonth() + 1)}.${pad(d.getDate())} 星期${week[d.getDay()]}`;
+
+const all = (await getCollection("moments", ({ data }) => !data.draft)).sort(
+  (a, b) => b.data.date.getTime() - a.data.date.getTime()
+);
+
+const cards = all.flatMap((m) =>
+  m.data.photos.map((p) => ({
+    src: `${base}moments/${p.src}`,
+    w: p.w,
+    h: p.h,
+    d: label(m.data.date),
+    title: m.data.title,
+    text: m.data.text,
+    tags: m.data.tags.join(" · "),
+  }))
+);
+
+const first = cards[0];
 ---
 
 <Base title="瞬间">
@@ -11,56 +34,62 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, "") + "/";
 
       <div class="head">
         <h1>瞬间</h1>
-        <span class="count">{moments.length} 张</span>
+        <span class="count">{cards.length} 张</span>
       </div>
       <p class="lede">照片按时间叠在桌上。点最上面那张翻开，左右拖动翻下一张。</p>
 
-      <div class="stage">
-        <button class="close" id="close">收 起</button>
-        <div class="deck pile" id="deck">
-          {
-            moments.map((m, i) => (
-              <article
-                class="card"
-                data-date={m.d}
-                data-title={m.title}
-                data-text={m.text}
-                data-tags={m.tags}
-                data-i={i}
-              >
-                <svg width={m.w} height={m.h} viewBox={`0 0 ${m.w} ${m.h}`} preserveAspectRatio="none">
-                  <rect width={m.w} height={m.h} fill={m.colors[0]} />
-                  <rect y={m.h * 0.58} width={m.w} height={m.h * 0.42} fill={m.colors[1]} />
-                  <rect y={m.h * 0.58} width={m.w} height="2" fill="rgba(0,0,0,.05)" />
-                </svg>
-              </article>
-            ))
-          }
-        </div>
-      </div>
+      {
+        cards.length === 0 ? (
+          <div class="empty-stage">
+            <p>还没有照片。</p>
+            <p class="sub">桌面上双击「1-整理图片」，选一个装照片的文件夹。</p>
+          </div>
+        ) : (
+          <>
+            <div class="stage">
+              <button class="close" id="close">收 起</button>
+              <div class="deck pile" id="deck">
+                {cards.map((c, i) => (
+                  <article
+                    class="card"
+                    data-date={c.d}
+                    data-title={c.title}
+                    data-text={c.text}
+                    data-tags={c.tags}
+                    data-i={i}
+                  >
+                    <img src={c.src} width={c.w} height={c.h} alt="" loading={i < 3 ? "eager" : "lazy"} />
+                  </article>
+                ))}
+              </div>
+            </div>
 
-      <div class="info">
-        <span class="d" id="i-date">{moments[0].d}</span>
-        <h2 id="i-title">{moments[0].title}</h2>
-        <p id="i-text">{moments[0].text}</p>
-        <div class="tags" id="i-tags">{moments[0].tags}</div>
-        <div class="dotbar" id="dots"></div>
-      </div>
+            <div class="info">
+              <span class="d" id="i-date">{first.d}</span>
+              <h2 id="i-title">{first.title}</h2>
+              <p id="i-text">{first.text}</p>
+              <div class="tags" id="i-tags">{first.tags}</div>
+              <div class="dotbar" id="dots" />
+            </div>
 
-      <div class="hint" id="hint">点 照 片 翻 开</div>
+            <div class="hint" id="hint">点 照 片 翻 开</div>
+          </>
+        )
+      }
     </div>
   </div>
 
   <script>
     (function () {
-      const deck = document.getElementById("deck")!;
-      const cards = Array.from(deck.querySelectorAll<HTMLElement>(".card"));
+      const deck = document.getElementById("deck");
+      if (!deck) return;
+      const cards = Array.from(deck.querySelectorAll(".card"));
       const closeBtn = document.getElementById("close")!;
       const hint = document.getElementById("hint")!;
       const dots = document.getElementById("dots")!;
 
       const N = cards.length;
-      let mode: "pile" | "viewer" = "pile";
+      let mode = "pile";
       let active = 0;
 
       cards.forEach((_, i) => {
@@ -69,12 +98,12 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, "") + "/";
         dots.appendChild(d);
       });
 
-      function drawInfo(i: number) {
+      function drawInfo(i) {
         const c = cards[i];
-        document.getElementById("i-date")!.textContent = c.dataset.date ?? "";
-        document.getElementById("i-title")!.textContent = c.dataset.title ?? "";
-        document.getElementById("i-text")!.textContent = c.dataset.text ?? "";
-        document.getElementById("i-tags")!.textContent = c.dataset.tags ?? "";
+        document.getElementById("i-date").textContent = c.dataset.date || "";
+        document.getElementById("i-title").textContent = c.dataset.title || "";
+        document.getElementById("i-text").textContent = c.dataset.text || "";
+        document.getElementById("i-tags").textContent = c.dataset.tags || "";
         Array.from(dots.children).forEach((d, k) => {
           d.className = k === i ? "on" : "";
         });
@@ -94,7 +123,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, "") + "/";
         });
       }
 
-      function layoutViewer(progress: number, animate: boolean) {
+      function layoutViewer(progress, animate) {
         const g = gap();
         cards.forEach((c, i) => {
           const d = i - (active + progress);
@@ -110,7 +139,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, "") + "/";
         });
       }
 
-      function enterViewer(i: number) {
+      function enterViewer(i) {
         mode = "viewer";
         active = i;
         deck.classList.remove("pile");
@@ -234,13 +263,24 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, "") + "/";
     will-change: transform, opacity;
     transform-origin: 50% 50%;
   }
-  .card svg{ display: block; height: 100%; width: auto; border-radius: 2px; }
+  .card img{
+    display: block;
+    height: 100%;
+    width: auto;
+    max-width: 620px;
+    border-radius: 2px;
+    object-fit: cover;
+    background: #EFE9DC;
+  }
 
   .info{ margin-top: 30px; max-width: 600px; min-height: 96px; }
   .info .d{ display: block; font-family: var(--brush); font-size: 15px; color: var(--ink-2); letter-spacing: .05em; }
   .info h2{ font-family: var(--brush); font-size: 30px; font-weight: 400; line-height: 1.35; margin-top: 8px; }
+  .info h2:empty{ display: none; }
   .info p{ margin-top: 10px; font-size: 14.5px; line-height: 1.9; color: #3A362F; }
+  .info p:empty{ display: none; }
   .info .tags{ margin-top: 10px; font-size: 11px; color: #A8A39A; letter-spacing: .1em; }
+  .info .tags:empty{ display: none; }
 
   .hint{ margin-top: 8px; font-size: 11px; letter-spacing: .12em; color: #B3AB9C; transition: opacity .3s ease; }
   .hint.hide{ opacity: 0; }
@@ -255,7 +295,20 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, "") + "/";
   .close.on{ opacity: 1; pointer-events: auto; }
   .close:hover{ color: var(--stamp); }
 
-  .dotbar{ display: flex; gap: 6px; margin-top: 16px; }
+  .dotbar{ display: flex; gap: 6px; margin-top: 16px; flex-wrap: wrap; }
   .dotbar i{ width: 5px; height: 5px; border-radius: 50%; background: #DED6C6; transition: background .25s; }
   .dotbar i.on{ background: var(--stamp); }
+
+  .empty-stage{
+    margin-top: 80px;
+    font-family: var(--brush);
+    font-size: 20px;
+    color: #B7AE9C;
+    line-height: 2;
+  }
+  .empty-stage .sub{
+    font-family: inherit;
+    font-size: 15px;
+    color: #C0B7A6;
+  }
 </style>
