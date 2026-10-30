@@ -35,14 +35,14 @@ const full = (d: Date) =>
 const base = import.meta.env.BASE_URL.replace(/\/$/, "") + "/";
 ---
 
-<Base title={entry.data.title ?? "无题"}>
+<Base title={entry.data.title || "无题"}>
   <div class="sheet-page">
     <div class="sheet">
       <a class="back" href={base}>← 书桌</a>
 
       <article class="entry">
         <span class="d">{full(entry.data.date)}</span>
-        <h1>{entry.data.title ?? "无题"}</h1>
+        <h1>{entry.data.title || "无题"}</h1>
         {entry.data.tags.length > 0 && <div class="tags">{entry.data.tags.join(" · ")}</div>}
 
         <div class="body">
@@ -54,7 +54,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, "") + "/";
             prev ? (
               <a href={`${base}journal/${prev.id}`}>
                 <span class="lab">上一条 · {md(prev.data.date)}</span>
-                {prev.data.title ?? "无题"}
+                {prev.data.title || "无题"}
               </a>
             ) : (
               <span />
@@ -64,7 +64,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, "") + "/";
             next ? (
               <a href={`${base}journal/${next.id}`} style="text-align:right">
                 <span class="lab">下一条 · {md(next.data.date)}</span>
-                {next.data.title ?? "无题"}
+                {next.data.title || "无题"}
               </a>
             ) : (
               <span />

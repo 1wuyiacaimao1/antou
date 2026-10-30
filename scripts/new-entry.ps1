@@ -101,7 +101,7 @@ $head = @"
 date: $stamp
 title: 
 tags: []
-draft: true
+draft: false
 ---
 
 "@
@@ -139,7 +139,7 @@ if ($NoUI) { exit 0 }
 
 $code = Get-Command code -ErrorAction SilentlyContinue
 if ($code) {
-    Start-Process -FilePath "code" -ArgumentList "`"$path`""
+    Start-Process -FilePath "code" -ArgumentList "--goto", "`"$path`:8`"
 } else {
     Start-Process -FilePath "notepad.exe" -ArgumentList "`"$path`""
 }

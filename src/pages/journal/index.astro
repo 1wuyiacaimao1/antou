@@ -36,7 +36,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, "") + "/";
             <a class="item" href={`${base}journal/${e.id}`}>
               <span class="d">{md(e.data.date)}</span>
               <div>
-                <h2>{e.data.title ?? "无题"}</h2>
+                <h2>{e.data.title || "无题"}</h2>
                 <p>{excerpt(e.body)}</p>
                 {e.data.tags.length > 0 && <div class="tags">{e.data.tags.join(" · ")}</div>}
               </div>

@@ -5,7 +5,10 @@ const journal = defineCollection({
   loader: glob({ pattern: "**/*.md", base: "./src/content/journal" }),
   schema: z.object({
     date: z.coerce.date(),
-    title: z.string().optional(),
+    title: z
+      .string()
+      .nullish()
+      .transform((v) => (v ?? "").trim()),
     tags: z.array(z.string()).default([]),
     mood: z.string().optional(),
     cover: z.string().optional(),

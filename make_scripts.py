@@ -106,7 +106,7 @@ $head = @"
 date: $stamp
 title: 
 tags: []
-draft: true
+draft: false
 ---
 
 "@
@@ -144,7 +144,7 @@ if ($NoUI) { exit 0 }
 
 $code = Get-Command code -ErrorAction SilentlyContinue
 if ($code) {
-    Start-Process -FilePath "code" -ArgumentList "`"$path`""
+    Start-Process -FilePath "code" -ArgumentList "--goto", "`"$path`:8`"
 } else {
     Start-Process -FilePath "notepad.exe" -ArgumentList "`"$path`""
 }
@@ -158,6 +158,12 @@ Set-Location $root
 $siteUrl = "https://1wuyiacaimao1.github.io/antou/"
 $now = Get-Date
 $stamp = $now.ToString("yyyy-MM-dd HH:mm")
+
+Write-Host ""
+Write-Host "  先整理一下文件里的 frontmatter。" -ForegroundColor DarkGray
+if (Get-Command python -ErrorAction SilentlyContinue) {
+    & python (Join-Path $root "fix_frontmatter.py")
+}
 
 Write-Host ""
 Write-Host "  先在本机构建一次，写错了会在这里拦住。" -ForegroundColor DarkGray
