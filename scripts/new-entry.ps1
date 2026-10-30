@@ -1,0 +1,145 @@
+﻿param(
+    [string]$Type = "",
+    [switch]$NoUI
+)
+
+# 写一条：选类型、生成模板、打开编辑器
+$ErrorActionPreference = "Stop"
+Add-Type -AssemblyName System.Windows.Forms
+Add-Type -AssemblyName System.Drawing
+
+$root = Split-Path -Parent $PSScriptRoot
+Set-Location $root
+
+function Show-Chooser {
+    $form = New-Object System.Windows.Forms.Form
+    $form.Text = "写一条"
+    $form.ClientSize = New-Object System.Drawing.Size(320, 250)
+    $form.StartPosition = "CenterScreen"
+    $form.TopMost = $true
+    $form.FormBorderStyle = "FixedDialog"
+    $form.MaximizeBox = $false
+    $form.BackColor = [System.Drawing.Color]::FromArgb(251, 250, 247)
+    $form.Font = New-Object System.Drawing.Font("Microsoft YaHei", 11)
+
+    $title = New-Object System.Windows.Forms.Label
+    $title.Text = "今天想记点什么"
+    $title.AutoSize = $true
+    $title.Location = New-Object System.Drawing.Point(26, 20)
+    $title.ForeColor = [System.Drawing.Color]::FromArgb(60, 56, 50)
+    $form.Controls.Add($title)
+
+    $script:choice = $null
+    $items = @(
+        @{ key = "journal"; label = "随  记"; hint = "一段话" },
+        @{ key = "moments"; label = "瞬  间"; hint = "还没接" },
+        @{ key = "notes";   label = "笔  记"; hint = "还没接" }
+    )
+
+    $top = 54
+    foreach ($it in $items) {
+        $b = New-Object System.Windows.Forms.Button
+        $b.Text = $it.label
+        $b.Tag = $it.key
+        $b.Size = New-Object System.Drawing.Size(268, 48)
+        $b.Location = New-Object System.Drawing.Point(26, $top)
+        $b.FlatStyle = "Flat"
+        $b.FlatAppearance.BorderColor = [System.Drawing.Color]::FromArgb(214, 206, 190)
+        $b.BackColor = [System.Drawing.Color]::FromArgb(255, 253, 248)
+        $b.TextAlign = "MiddleLeft"
+        $b.Padding = New-Object System.Windows.Forms.Padding(20, 0, 0, 0)
+        if ($it.hint -eq "还没接") {
+            $b.Enabled = $false
+            $b.ForeColor = [System.Drawing.Color]::FromArgb(190, 182, 170)
+        } else {
+            $b.ForeColor = [System.Drawing.Color]::FromArgb(40, 36, 30)
+            $b.Add_Click({ $script:choice = $this.Tag; $form.Close() })
+        }
+        $form.Controls.Add($b)
+        $top += 58
+    }
+
+    [void]$form.ShowDialog()
+    $form.Dispose()
+    return $script:choice
+}
+
+if ($NoUI) {
+    if (-not $Type) { Write-Host "NoUI 模式需要 -Type"; exit 1 }
+    $choice = $Type
+} else {
+    $choice = Show-Chooser
+}
+
+if (-not $choice) { exit 0 }
+
+$now = Get-Date
+$date = $now.ToString("yyyy-MM-dd")
+$stamp = $now.ToString("yyyy-MM-dd HH:mm")
+
+$dir = switch ($choice) {
+    "journal" { "src/content/journal" }
+    "moments" { "src/content/moments" }
+    "notes"   { "src/content/notes" }
+    default   { "src/content/journal" }
+}
+
+New-Item -ItemType Directory -Force -Path (Join-Path $root $dir) | Out-Null
+
+# 同一天第二条自动加 -b/-c
+$base = $date
+$file = "$base.md"
+$n = 1
+while (Test-Path (Join-Path $root (Join-Path $dir $file))) {
+    $n++
+    $letter = [char](96 + $n)
+    $file = "$base-$letter.md"
+}
+
+$head = @"
+---
+date: $stamp
+title: 
+tags: []
+draft: true
+---
+
+"@
+
+$body = @"
+"@
+
+switch ($choice) {
+    "journal" {
+        $body = "`r`n"
+    }
+    "moments" {
+        $inbox = Join-Path $root (Join-Path "_inbox" $date)
+        $lines = @()
+        if (Test-Path $inbox) {
+            Get-ChildItem $inbox -Filter *.webp | Sort-Object Name | ForEach-Object {
+                $lines += "![](./$($_.Name))"
+            }
+        }
+        $body = ($lines -join "`r`n`r`n") + "`r`n`r`n"
+    }
+    "notes" {
+        $body = "`r`n" + '```' + "`r`n" + '```' + "`r`n"
+    }
+}
+
+$path = Join-Path $root (Join-Path $dir $file)
+$text = $head + $body
+[System.IO.File]::WriteAllText($path, $text, (New-Object System.Text.UTF8Encoding($false)))
+
+Write-Host ""
+Write-Host "  已建好：$dir\$file" -ForegroundColor DarkGray
+
+if ($NoUI) { exit 0 }
+
+$code = Get-Command code -ErrorAction SilentlyContinue
+if ($code) {
+    Start-Process -FilePath "code" -ArgumentList "`"$path`""
+} else {
+    Start-Process -FilePath "notepad.exe" -ArgumentList "`"$path`""
+}
