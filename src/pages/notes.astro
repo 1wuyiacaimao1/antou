@@ -1,71 +1,31 @@
 ---
 import Base from "../layouts/Base.astro";
+import { getCollection, render } from "astro:content";
 
-const notes = [
-  {
-    id: "schur",
-    date: "2026 年 10 月 18 日",
-    title: "分块矩阵与 Schur 补",
-    tags: "线性代数 · 1.6",
-    body: `<p>一个矩阵按 2×2 分块写成 <code>[A B; C D]</code>，如果 A 可逆，就可以把它化成上三角，对角线上的第二块正好是 Schur 补 S = D − C·A⁻¹·B。</p>
-<p>这一步和普通的消元是一回事，只不过元素换成了块。左乘一个分块下三角矩阵，把左下角那块消掉，剩下的就是 S。</p>
-<h3>为什么有用</h3>
-<ul>
-<li>判断可逆性：A 可逆时，原矩阵可逆等价于 S 可逆。</li>
-<li>求逆：分块求逆公式里那一项就是 S⁻¹。</li>
-<li>降维：大矩阵的问题化成一个小矩阵的问题。</li>
-</ul>
-<p>之前一直卡在「为什么可以按分块展开」，其实把块当成普通元素看就通了，前提是乘法顺序不能换。</p>`,
-  },
-  {
-    id: "binary",
-    date: "2026 年 10 月 12 日",
-    title: "二分边界的三种写法",
-    tags: "算法 · 二分",
-    body: `<p>三种写法都能过题，但边界含义不同，混着用必错。最稳的是左闭右开，区间 [lo, hi)，循环条件 lo &lt; hi，退出时 lo 就是答案位置。</p>
-<div class="code"><button class="copy">复 制</button><pre><code>lo, hi = 0, len(a)
-while lo &lt; hi:
-    mid = (lo + hi) // 2
-    if a[mid] &lt; x:
-        lo = mid + 1
-    else:
-        hi = mid
-return lo</code></pre></div>
-<p>第二种左闭右闭，循环条件 lo &lt;= hi，返回时要单独判断越界。第三种 mid 取 (lo+hi+1)//2 的，专门用来找最后一个满足条件的元素。</p>
-<h3>容易错的地方</h3>
-<ul>
-<li>左闭右开写成 lo &lt;= hi，会死循环或越界。</li>
-<li>两种 mid 取法混用，找右边界时会卡住。</li>
-</ul>`,
-  },
-  {
-    id: "taylor",
-    date: "2026 年 10 月 5 日",
-    title: "泰勒展开的余项怎么记",
-    tags: "高数 · 级数",
-    body: `<p>拉格朗日余项是 f⁽ⁿ⁺¹⁾(ξ)/(n+1)! · (x−a)ⁿ⁺¹，ξ 在 a 和 x 之间。记的时候只要记住「下一阶导数、除以阶乘、乘上次幂」，和前面各项的形式完全一致，只是导数取在一个未知点上。</p>
-<p>皮亚诺余项写成 o((x−a)ⁿ)，只说它比 n 次幂高阶，不说具体是多少。求极限用皮亚诺，估计误差用拉格朗日。</p>
-<p>用错余项是这类题最常见的扣分点：要证明不等式、估计精度，必须用拉格朗日；只算极限，皮亚诺就够。</p>`,
-  },
-  {
-    id: "window",
-    date: "2026 年 9 月 28 日",
-    title: "滑动窗口的两个模板",
-    tags: "算法 · 双指针",
-    body: `<p>一种是窗口大小固定，进一个出一个；另一种是窗口大小可变，右指针扩张、左指针收缩，直到条件重新满足。</p>
-<div class="code"><button class="copy">复 制</button><pre><code>left = 0
-for right in range(n):
-    add(a[right])
-    while not ok():
-        remove(a[left])
-        left += 1
-    ans = max(ans, right - left + 1)</code></pre></div>
-<p>关键是 <code>ok()</code> 的单调性：窗口变大只会更不满足，这样左指针才不会来回跳。</p>`,
-  },
-];
-
-const offsets = [3, 6, 9, 13, 17, 22];
 const base = import.meta.env.BASE_URL.replace(/\/$/, "") + "/";
+const offsets = [3, 6, 9, 13, 17, 22];
+
+const notes = (await getCollection("notes", ({ data }) => !data.draft)).sort(
+  (a, b) => b.data.date.getTime() - a.data.date.getTime()
+);
+
+const pad = (n: number) => String(n).padStart(2, "0");
+const fullDate = (d: Date) => `${d.getFullYear()} 年 ${d.getMonth() + 1} 月 ${d.getDate()} 日`;
+const shortDate = (d: Date) => `${pad(d.getMonth() + 1)}.${pad(d.getDate())}`;
+
+const bodies = await Promise.all(
+  notes.map(async (n) => ({
+    id: n.id,
+    Content: (await render(n)).Content,
+  }))
+);
+
+const meta = notes.map((n) => ({
+  id: n.id,
+  title: n.data.title || "无题",
+  d: fullDate(n.data.date),
+  m: shortDate(n.data.date) + (n.data.tags.length ? " · " + n.data.tags.join(" · ") : ""),
+}));
 ---
 
 <Base title="笔记">
@@ -93,18 +53,25 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, "") + "/";
       <div class="book">
         <div class="page left">
           <div class="ttl">笔记</div>
-          <div class="sub">{notes.length} 篇 · 挑几篇放着</div>
+          <div class="sub">{notes.length > 0 ? `${notes.length} 篇` : "还是空的"}</div>
 
-          <nav class="toc" id="toc">
-            {
-              notes.map((n, i) => (
-                <a href="#" data-id={n.id} class={i === 0 ? "on" : ""}>
-                  <div class="n">{n.title}</div>
-                  <div class="m">{n.date.replace("2026 年 ", "").replace(" 月 ", ".").replace(" 日", "")} · {n.tags}</div>
-                </a>
-              ))
-            }
-          </nav>
+          {
+            notes.length > 0 ? (
+              <nav class="toc" id="toc">
+                {meta.map((n, i) => (
+                  <a href="#" data-id={n.id} class={i === 0 ? "on" : ""}>
+                    <div class="n">{n.title}</div>
+                    <div class="m">{n.m}</div>
+                  </a>
+                ))}
+              </nav>
+            ) : (
+              <div class="empty-toc">
+                <p>还没有笔记。</p>
+                <p>桌面上双击「2-写一条」，选「笔记」。</p>
+              </div>
+            )
+          }
 
           <div class="leftfoot">— 随手记下的东西，不保证对 —</div>
         </div>
@@ -118,20 +85,42 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, "") + "/";
     <div class="hint-book">点 左 边 目 录 翻 页</div>
   </div>
 
-  <script type="application/json" id="notes-data" set:html={JSON.stringify(notes)} />
+  <div id="note-store" hidden>
+    {
+      bodies.map((b) => {
+        const Body = b.Content;
+        return (
+          <article data-note-id={b.id}>
+            <Body />
+          </article>
+        );
+      })
+    }
+  </div>
+
+  <script type="application/json" id="notes-data" set:html={JSON.stringify(meta)} />
 
   <script>
     (function () {
       const data = JSON.parse(document.getElementById("notes-data")!.textContent || "[]");
+      const store = document.getElementById("note-store")!;
+      const right = document.getElementById("right")!;
+      const content = document.getElementById("content")!;
+      const tocLinks = Array.from(document.querySelectorAll<HTMLAnchorElement>("#toc a"));
+
+      if (!data.length) return;
+
       const byId: Record<string, any> = {};
       const order: string[] = [];
       data.forEach((n: any) => { byId[n.id] = n; order.push(n.id); });
 
-      const right = document.getElementById("right")!;
-      const content = document.getElementById("content")!;
-      const tocLinks = Array.from(document.querySelectorAll<HTMLAnchorElement>("#toc a"));
       let current = order[0];
       let turning = false;
+
+      function bodyOf(id: string) {
+        const el = store.querySelector(`article[data-note-id="${id}"]`);
+        return el ? el.innerHTML : "";
+      }
 
       function render(id: string) {
         const n = byId[id];
@@ -140,22 +129,32 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, "") + "/";
         const next = i < order.length - 1 ? order[i + 1] : null;
 
         content.innerHTML =
-          '<div class="note-date">' + n.date + "</div>" +
+          '<div class="note-date">' + n.d + "</div>" +
           '<h1 class="note-title">' + n.title + "</h1>" +
-          '<div class="note-tags">' + n.tags + "</div>" +
-          '<div class="note-body">' + n.body + "</div>" +
+          '<div class="note-tags">' + (n.m.split(" · ").slice(1).join(" · ")) + "</div>" +
+          '<div class="note-body">' + bodyOf(id) + "</div>" +
           '<div class="pn">' +
             '<button data-go="' + (prev || "") + '"' + (prev ? "" : " disabled") + ">← 上一篇</button>" +
             '<button data-go="' + (next || "") + '"' + (next ? "" : " disabled") + ">下一篇 →</button>" +
           "</div>";
 
-        content.querySelectorAll<HTMLButtonElement>(".copy").forEach((btn) => {
+        content.querySelectorAll("pre").forEach((pre) => {
+          if (pre.parentElement && pre.parentElement.classList.contains("code")) return;
+          const box = document.createElement("div");
+          box.className = "code";
+          pre.parentNode!.insertBefore(box, pre);
+          box.appendChild(pre);
+
+          const btn = document.createElement("button");
+          btn.className = "copy";
+          btn.textContent = "复 制";
           btn.addEventListener("click", () => {
-            const code = btn.parentElement!.querySelector("code")?.innerText ?? "";
+            const code = pre.innerText || "";
             if (navigator.clipboard) navigator.clipboard.writeText(code);
             btn.textContent = "已 复 制";
             setTimeout(() => (btn.textContent = "复 制"), 1400);
           });
+          box.appendChild(btn);
         });
 
         content.querySelectorAll<HTMLButtonElement>(".pn button").forEach((b) => {
@@ -322,22 +321,28 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, "") + "/";
   .toc .m{ margin-top: 4px; font-size: 11px; color: #A8A39A; letter-spacing: .08em; }
   .toc a.on .n{ color: #000; }
 
+  .empty-toc{ margin-top: 40px; font-family: var(--brush); font-size: 17px; color: #BFB6A4; line-height: 2.1; }
+  .empty-toc p{ font-family: inherit; }
+  .empty-toc p + p{ font-size: 14px; color: #CBC3B2; }
+
   .leftfoot{ margin-top: 26px; font-family: var(--brush); font-size: 12px; color: #C6BDAC; }
 
   .note-date{ font-family: var(--brush); font-size: 14px; color: var(--ink-2); letter-spacing: .05em; }
   .note-title{ font-family: var(--brush); font-size: 30px; font-weight: 400; line-height: 1.35; margin-top: 8px; }
   .note-tags{ margin-top: 10px; font-size: 11px; color: #A8A39A; letter-spacing: .1em; }
+  .note-tags:empty{ display: none; }
 
   .note-body{ margin-top: 24px; font-size: 14.5px; line-height: 1.95; color: #2E2B26; }
   .note-body p + p{ margin-top: .9em; }
+  .note-body h2{ font-size: 15px; font-weight: 600; letter-spacing: .03em; margin: 26px 0 10px; color: #3A362F; }
   .note-body h3{ font-size: 13px; font-weight: 600; letter-spacing: .04em; margin: 26px 0 10px; color: #3A362F; }
   .note-body ul{ margin: 10px 0 0 18px; }
   .note-body li{ margin-bottom: 6px; }
   .note-body code{ font-family: var(--mono); font-size: 12.3px; background: #F3EDDF; padding: 1px 4px; border-radius: 2px; }
+  .note-body pre{ margin: 0; overflow-x: auto; }
+  .note-body pre code{ background: none; padding: 0; font-family: var(--mono); font-size: 12.5px; line-height: 1.85; color: #3B352C; white-space: pre; }
 
   .code{ position: relative; margin: 16px 0; background: #F6F0E3; border: 1px solid #E6DFD2; border-radius: 3px; padding: 14px 14px 14px 16px; }
-  .code pre{ font-family: var(--mono); font-size: 12.5px; line-height: 1.85; color: #3B352C; white-space: pre; overflow-x: auto; }
-  .code pre code{ background: none; padding: 0; font-size: inherit; }
   .copy{
     position: absolute; right: 10px; top: 8px; font: inherit; font-size: 10.5px; letter-spacing: .1em;
     color: #B3AB9C; background: transparent; border: none; cursor: pointer; padding: 4px 6px;

@@ -5,4 +5,7 @@ export default defineConfig({
   base: '/antou',
   output: 'static',
   build: { format: 'directory' },
+  markdown: {
+    syntaxHighlight: false,
+  },
 });

@@ -19,7 +19,7 @@ Set-Location $root
 function Show-Chooser {
     $form = New-Object System.Windows.Forms.Form
     $form.Text = "写一条"
-    $form.ClientSize = New-Object System.Drawing.Size(320, 250)
+    $form.ClientSize = New-Object System.Drawing.Size(330, 250)
     $form.StartPosition = "CenterScreen"
     $form.TopMost = $true
     $form.FormBorderStyle = "FixedDialog"
@@ -36,9 +36,9 @@ function Show-Chooser {
 
     $script:choice = $null
     $items = @(
-        @{ key = "journal"; label = "随  记"; hint = "可以写" },
-        @{ key = "moments"; label = "瞬  间 · 用 1-整理图片"; hint = "还没接" },
-        @{ key = "notes";   label = "笔  记 · 还没接"; hint = "还没接" }
+        @{ key = "journal"; label = "随  记" },
+        @{ key = "notes";   label = "笔  记" },
+        @{ key = "lists";   label = "清  单" }
     )
 
     $top = 54
@@ -46,20 +46,15 @@ function Show-Chooser {
         $b = New-Object System.Windows.Forms.Button
         $b.Text = $it.label
         $b.Tag = $it.key
-        $b.Size = New-Object System.Drawing.Size(268, 48)
+        $b.Size = New-Object System.Drawing.Size(278, 48)
         $b.Location = New-Object System.Drawing.Point(26, $top)
         $b.FlatStyle = "Flat"
         $b.FlatAppearance.BorderColor = [System.Drawing.Color]::FromArgb(214, 206, 190)
         $b.BackColor = [System.Drawing.Color]::FromArgb(255, 253, 248)
         $b.TextAlign = "MiddleLeft"
         $b.Padding = New-Object System.Windows.Forms.Padding(20, 0, 0, 0)
-        if ($it.hint -eq "还没接") {
-            $b.Enabled = $false
-            $b.ForeColor = [System.Drawing.Color]::FromArgb(190, 182, 170)
-        } else {
-            $b.ForeColor = [System.Drawing.Color]::FromArgb(40, 36, 30)
-            $b.Add_Click({ $script:choice = $this.Tag; $form.Close() })
-        }
+        $b.ForeColor = [System.Drawing.Color]::FromArgb(40, 36, 30)
+        $b.Add_Click({ $script:choice = $this.Tag; $form.Close() })
         $form.Controls.Add($b)
         $top += 58
     }
@@ -84,24 +79,41 @@ $stamp = $now.ToString("yyyy-MM-dd HH:mm")
 
 $dir = switch ($choice) {
     "journal" { "src/content/journal" }
-    "moments" { "src/content/moments" }
     "notes"   { "src/content/notes" }
+    "lists"   { "src/content/lists" }
     default   { "src/content/journal" }
 }
 
 New-Item -ItemType Directory -Force -Path (Join-Path $root $dir) | Out-Null
 
 # 同一天第二条自动加 -b/-c
-$base = $date
-$file = "$base.md"
+$file = "$date.md"
 $n = 1
 while (Test-Path (Join-Path $root (Join-Path $dir $file))) {
     $n++
     $letter = [char](96 + $n)
-    $file = "$base-$letter.md"
+    $file = "$date-$letter.md"
 }
 
-$head = @"
+switch ($choice) {
+    "lists" {
+        $text = @"
+---
+date: $date
+name: 
+note: 
+draft: false
+---
+
+<!-- 一行一项：- [ ] 想做的事 ／ 做完了改成 - [x] ／ 后面加 @2026 会显示年份 -->
+
+- [ ] 
+- [ ] 
+- [ ] 
+"@
+    }
+    default {
+        $text = @"
 ---
 date: $stamp
 title: 
@@ -110,31 +122,10 @@ draft: false
 ---
 
 "@
-
-$body = @"
-"@
-
-switch ($choice) {
-    "journal" {
-        $body = "`r`n"
-    }
-    "moments" {
-        $inbox = Join-Path $root (Join-Path "_inbox" $date)
-        $lines = @()
-        if (Test-Path $inbox) {
-            Get-ChildItem $inbox -Filter *.webp | Sort-Object Name | ForEach-Object {
-                $lines += "![](./$($_.Name))"
-            }
-        }
-        $body = ($lines -join "`r`n`r`n") + "`r`n`r`n"
-    }
-    "notes" {
-        $body = "`r`n" + '```' + "`r`n" + '```' + "`r`n"
     }
 }
 
 $path = Join-Path $root (Join-Path $dir $file)
-$text = $head + $body
 [System.IO.File]::WriteAllText($path, $text, (New-Object System.Text.UTF8Encoding($false)))
 
 Write-Host ""
@@ -144,32 +135,29 @@ if ($NoUI) { exit 0 }
 
 $code = Get-Command code -ErrorAction SilentlyContinue
 if ($code) {
-    Start-Process -FilePath "code" -ArgumentList "--goto", "`"$path`:8`"
+    Start-Process -FilePath "code" -ArgumentList "--goto", "`"$path`:8`""
 } else {
     Start-Process -FilePath "notepad.exe" -ArgumentList "`"$path`""
 }
 '''
 
-
-(ROOT / "scripts" / "new-entry.ps1").write_text(new_entry, encoding="utf-8-sig")
-
 bat_new = r'''@echo off
 chcp 65001 >nul
 cd /d "%~dp0"
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\new-entry.ps1"
-if errorlevel 1 pause
+echo.
+pause
 '''
 
 bat_pub = r'''@echo off
 chcp 65001 >nul
 cd /d "%~dp0"
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\publish.ps1"
+echo.
+pause
 '''
 
+(ROOT / "scripts" / "new-entry.ps1").write_text(new_entry, encoding="utf-8-sig")
 (ROOT / "2-写一条.bat").write_text(bat_new, encoding="utf-8")
 (ROOT / "3-上传.bat").write_text(bat_pub, encoding="utf-8")
-
 print("written")
-for f in ["scripts/new-entry.ps1", "scripts/publish.ps1", "2-写一条.bat", "3-上传.bat"]:
-    p = ROOT / f
-    print(f, p.stat().st_size, "bytes")

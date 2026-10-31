@@ -1,52 +1,69 @@
 ---
 import Base from "../../layouts/Base.astro";
-import { lists } from "../../data/lists";
-import type { ListGroup } from "../../data/lists";
+import { getCollection } from "astro:content";
+import type { CollectionEntry } from "astro:content";
+import { parseItems, countDone } from "../../lib/lists";
 
 export async function getStaticPaths() {
-  return lists.map((l) => ({ params: { id: l.id }, props: { list: l } }));
+  const all = await getCollection("lists", ({ data }) => !data.draft);
+  return all.map((entry) => ({
+    params: { id: entry.id },
+    props: { entry },
+  }));
 }
 
 interface Props {
-  list: ListGroup;
+  entry: CollectionEntry<"lists">;
 }
 
-const { list } = Astro.props;
-const done = list.items.filter((i) => i.done).length;
-const pct = Math.round((done / list.total) * 100);
+const { entry } = Astro.props;
+const items = parseItems(entry.body ?? "");
+const done = countDone(items);
+const pct = items.length ? Math.round((done / items.length) * 100) : 0;
 const base = import.meta.env.BASE_URL.replace(/\/$/, "") + "/";
 ---
 
-<Base title={list.name}>
+<Base title={entry.data.name}>
   <div class="sheet-page">
     <div class="sheet">
-      <a class="back" href={base}>← 书桌</a>
+      <a class="back" href={`${base}lists`}>← 清单</a>
 
-      <article class="detail" data-list={list.id} data-total={list.total}>
-        <h1>{list.name}</h1>
+      <article class="detail" data-list={entry.id} data-total={items.length}>
+        <h1>{entry.data.name}</h1>
 
         <div class="meta">
-          <span id="count">{done} / {list.total}</span>
+          <span id="count">{done} / {items.length}</span>
           <span class="bar"><i id="bar" style={`width:${pct}%`} /></span>
         </div>
 
+        {
+          entry.data.note && <p class="lede">{entry.data.note}</p>
+        }
+
         <div class="items" id="items">
-          {
-            list.items.map((it) => (
-              <div class={`it${it.done ? " on" : ""}`} data-k={it.k}>
-                <span class="box">
-                  <svg viewBox="0 0 16 16">
-                    <path d="M3 8.5 L6.4 12 L13 4.6" fill="none" stroke="#FFFDF8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                  </svg>
-                </span>
-                <span class="txt">{it.text}</span>
-                <span class="yr">{it.year ?? ""}</span>
-              </div>
-            ))
-          }
+          {items.map((it) => (
+            <div class={`it${it.done ? " on" : ""}`} data-k={it.text}>
+              <span class="box">
+                <svg viewBox="0 0 16 16">
+                  <path
+                    d="M3 8.5 L6.4 12 L13 4.6"
+                    fill="none"
+                    stroke="#FFFDF8"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </span>
+              <span class="txt">{it.text}</span>
+              <span class="yr">{it.year}</span>
+            </div>
+          ))}
         </div>
 
-        <p class="foot">勾选状态存在这台电脑的浏览器里，换设备或清缓存会回到初始状态。</p>
+        {items.length === 0 && <p class="lede">这一项还没有内容。</p>}
+
+        <p class="foot">勾选状态存在这台电脑的浏览器里，换设备或清缓存会回到文件里的初始状态。</p>
       </article>
     </div>
   </div>
@@ -60,16 +77,19 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, "") + "/";
       const items = Array.from(root.querySelectorAll<HTMLElement>(".it"));
       const count = document.getElementById("count")!;
       const bar = document.getElementById("bar")!;
+      if (!total) return;
 
-      let saved: string[] = [];
+      let saved: string[] | null = null;
       try {
-        saved = JSON.parse(localStorage.getItem(key) || "[]");
+        const raw = localStorage.getItem(key);
+        saved = raw ? JSON.parse(raw) : null;
       } catch {
-        saved = [];
+        saved = null;
       }
-      if (saved.length) {
+
+      if (saved) {
         items.forEach((el) => {
-          if (saved.includes(el.dataset.k!)) el.classList.add("on");
+          el.classList.toggle("on", saved!.includes(el.dataset.k!));
         });
       }
 
@@ -83,12 +103,14 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, "") + "/";
         } catch {}
       }
 
-      items.forEach((el) => el.addEventListener("click", () => {
-        el.classList.toggle("on");
-        refresh();
-      }));
+      items.forEach((el) =>
+        el.addEventListener("click", () => {
+          el.classList.toggle("on");
+          refresh();
+        })
+      );
 
-      refresh();
+      if (saved) refresh();
     })();
   </script>
 </Base>

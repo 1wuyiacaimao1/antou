@@ -11,6 +11,9 @@ const recent = all.slice(0, 3);
 const momentList = await getCollection("moments", ({ data }) => !data.draft);
 const shotCount = momentList.reduce((n, m) => n + m.data.photos.length, 0);
 
+const noteCount = (await getCollection("notes", ({ data }) => !data.draft)).length;
+const listCount = (await getCollection("lists", ({ data }) => !data.draft)).length;
+
 const pad = (n: number) => String(n).padStart(2, "0");
 const md = (d: Date) => `${d.getMonth() + 1}.${pad(d.getDate())}`;
 const full = (d: Date) => `${d.getFullYear()} · ${pad(d.getMonth() + 1)} · ${pad(d.getDate())}`;
@@ -193,8 +196,8 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, "") + "/";
           <div class="tray-inner">
             <a class="cell" href={`${base}journal`}><span class="name">随记</span><span class="count">{all.length} 条</span><span class="stack"><i></i><i></i></span></a>
             <a class="cell" href={`${base}moments`}><span class="name">瞬间</span><span class="count">{shotCount > 0 ? `${shotCount} 张` : "先空着"}</span><span class="stack"><i></i><i></i></span></a>
-            <a class="cell" href={`${base}lists`}><span class="name">清单</span><span class="count">4 个</span><span class="stack"><i></i><i></i></span></a>
-            <a class="cell" href={`${base}notes`}><span class="name">笔记</span><span class="count">31 篇</span><span class="stack"><i></i><i></i></span></a>
+            <a class="cell" href={`${base}lists`}><span class="name">清单</span><span class="count">{listCount > 0 ? `${listCount} 个` : "先空着"}</span><span class="stack"><i></i><i></i></span></a>
+            <a class="cell" href={`${base}notes`}><span class="name">笔记</span><span class="count">{noteCount > 0 ? `${noteCount} 篇` : "先空着"}</span><span class="stack"><i></i><i></i></span></a>
             <a class="cell" href={`${base}bookmarks`}><span class="name">收藏</span><span class="count">先空着</span><span class="stack"><i></i><i></i></span></a>
           </div>
         </div>

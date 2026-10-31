@@ -1,10 +1,24 @@
 ---
 import Base from "../../layouts/Base.astro";
-import { lists } from "../../data/lists";
+import { getCollection } from "astro:content";
+import { parseItems, countDone } from "../../lib/lists";
 
-const doneCount = (l: (typeof lists)[number]) => l.items.filter((i) => i.done).length;
-const pct = (l: (typeof lists)[number]) => Math.round((doneCount(l) / l.total) * 100);
 const base = import.meta.env.BASE_URL.replace(/\/$/, "") + "/";
+
+const rows = (await getCollection("lists", ({ data }) => !data.draft))
+  .sort((a, b) => a.id.localeCompare(b.id))
+  .map((l) => {
+    const items = parseItems(l.body ?? "");
+    const done = countDone(items);
+    return {
+      id: l.id,
+      name: l.data.name,
+      note: l.data.note,
+      total: items.length,
+      done,
+      pct: items.length ? Math.round((done / items.length) * 100) : 0,
+    };
+  });
 ---
 
 <Base title="清单">
@@ -14,24 +28,31 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, "") + "/";
 
       <div class="head">
         <h1>清单</h1>
-        <span class="count">{lists.length} 个</span>
+        <span class="count">{rows.length > 0 ? `${rows.length} 个` : "还是空的"}</span>
       </div>
       <p class="lede">想做的事分门别类放着，勾掉一项就算完成，不追进度。</p>
 
-      <div class="lists">
-        {
-          lists.map((l) => (
-            <a class="row-link" href={`${base}lists/${l.id}`}>
-              <span class="top">
-                <span class="name">{l.name}</span>
-                <span class="num">{doneCount(l)} / {l.total}</span>
-              </span>
-              <div class="note">{l.note}</div>
-              <div class="track"><i style={`width:${pct(l)}%`} /></div>
-            </a>
-          ))
-        }
-      </div>
+      {
+        rows.length === 0 ? (
+          <div class="empty">
+            <p>还没有清单。</p>
+            <p class="sub">桌面上双击「2-写一条」，选「清单」，一行写一项。</p>
+          </div>
+        ) : (
+          <div class="lists">
+            {rows.map((l) => (
+              <a class="row-link" href={`${base}lists/${l.id}`}>
+                <span class="top">
+                  <span class="name">{l.name}</span>
+                  <span class="num">{l.done} / {l.total}</span>
+                </span>
+                <div class="note">{l.note}</div>
+                <div class="track"><i style={`width:${l.pct}%`} /></div>
+              </a>
+            ))}
+          </div>
+        )
+      }
     </div>
   </div>
 </Base>
@@ -55,4 +76,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, "") + "/";
 
   .track{ margin-top: 12px; height: 2px; background: var(--line); position: relative; overflow: hidden; }
   .track i{ position: absolute; left: 0; top: 0; bottom: 0; background: #8C8272; transition: width .3s cubic-bezier(.22,.61,.36,1); }
+
+  .empty{ margin-top: 70px; font-family: var(--brush); font-size: 20px; color: #C0B7A6; line-height: 2; }
+  .empty .sub{ font-size: 15px; color: #C8BFAD; }
 </style>
